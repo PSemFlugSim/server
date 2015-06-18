@@ -1,7 +1,12 @@
 package de.gymolching.fsb;
 
 import com.pi4j.io.gpio.GpioFactory;
+import de.gymolching.fsb.hal.ArmFactory;
+import de.gymolching.fsb.halApi.ArmInterface;
+import de.gymolching.fsb.network.api.FSBServerInterface;
+import de.gymolching.fsb.network.implementation.FSBServer;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 /**
@@ -25,7 +30,7 @@ public class Launcher {
             //create thread for program
             Thread t = new Thread(() -> {
 
-                //TODO launch program here
+                MainLoopHandler.getInstance().mainLoop();
 
             }, "program");
             t.start();

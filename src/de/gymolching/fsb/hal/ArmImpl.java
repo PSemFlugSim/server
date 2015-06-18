@@ -38,6 +38,9 @@ public class ArmImpl implements ArmInterface {
     //how long should be waited after the counter chip's clear was high
     private final static int COUNTER_CLEAR_WAIT_TIME_MILLIS = 50;
 
+    //how much time should by between every poll while driving to starting position
+    private final static int STARTING_POSITION_POLLING_TIME_MILLIS = 1000;
+
     //pwm output pin connected to the h-driver's enable pin
     private final GpioPinPwmOutput hDriverEnPwmOutputPin;
 
@@ -222,17 +225,30 @@ public class ArmImpl implements ArmInterface {
      */
     @Override
     public void moveToStartingPosition() {
+        //save speed
         int latestSpeedS = this.lastSpeed;
-        setSpeed(100);
+        setSpeed(50);
         startBackward();
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+        resetPositionBuffer();
+        int lastPos;
+        int newPos = -1;
+
+        //loop as long as position changes at least every second
+        do {
+            try {
+                Thread.sleep(STARTING_POSITION_POLLING_TIME_MILLIS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            lastPos = newPos;
+        } while ((newPos = getPosition()) != lastPos);
+
+
         stop();
         resetPositionBuffer();
 
+        //set speed to speed before operation
         if (latestSpeedS != 0) this.hDriverEnPwmOutputPin.setPwm(latestSpeedS);
     }
 
