@@ -1,11 +1,11 @@
-package de.gymolching.fsb.server.implementation;
+package de.gymolching.fsb.network.implementation;
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
 import de.gymolching.fsb.api.FSBPosition;
-import de.gymolching.fsb.server.api.FSBServerInterface;
+import de.gymolching.fsb.network.api.FSBServerInterface;
 
 public class FSBServer implements FSBServerInterface, Runnable
 {

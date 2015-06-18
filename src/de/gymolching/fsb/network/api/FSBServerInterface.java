@@ -1,4 +1,4 @@
-package de.gymolching.fsb.server.api;
+package de.gymolching.fsb.network.api;
 
 import de.gymolching.fsb.api.FSBPosition;
 
