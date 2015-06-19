@@ -27,7 +27,7 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     private final Thread[] armThreads;
 
     //whether an arm is currently moving
-    private boolean[] armMoving;
+    private final boolean[] armMoving;
 
     //main watch thread
     private final Thread mainWatchThread;
@@ -81,12 +81,16 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
             for (int i = 0; i < this.armMoving.length; i++) {
                 if (this.armMoving[i]) allAtStartingPosition = false;
             }
-            try {
-                this.armMoving.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (!allAtStartingPosition) {
+                synchronized (this.armMoving) {
+                    try {
+                        this.armMoving.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("[MWT] change in armMoving");
             }
-            System.out.println("[MWT] change in armMoving");
         }
 
         System.out.println("[MWT] all arms at starting position");
@@ -95,12 +99,14 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
             //check if currentPositionGoal is available
             if (this.currentPositionGoal == null) {
-                try {
-                    //wait for a new position
-                    System.out.println("[MWT] waiting for new position");
-                    this.positionsQueue.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                synchronized (this.positionsQueue) {
+                    try {
+                        //wait for a new position
+                        System.out.println("[MWT] waiting for new position");
+                        this.positionsQueue.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -108,19 +114,25 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
             //set armMoving to true, notify ArmThreads
             for (int i = 0; i < armMoving.length; i++) armMoving[i] = true;
-            this.positionsQueue.notifyAll();
+            synchronized (this.positionsQueue) {
+                this.positionsQueue.notifyAll();
+            }
 
             //wait for all arms to be done moving
             boolean allDone = false;
             while (!allDone) {
                 allDone = true;
-                for (int i = 0; i < this.armMoving.length; i++) {
-                    if (this.armMoving[i]) allDone = false;
+                for (boolean anArmMoving : this.armMoving) {
+                    if (anArmMoving) allDone = false;
                 }
-                try {
-                    this.armMoving.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if (!allDone) {
+                    synchronized (this.armMoving) {
+                        try {
+                            this.armMoving.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
                 System.out.println("[MWT] change in armMoving");
             }
@@ -156,15 +168,20 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
             System.out.println("[ARM" + armId + "] moving to starting position");
             arm.moveToStartingPosition();
             armMoving[armId] = false;
-            armMoving.notifyAll();
             System.out.println("[ARM" + armId + "] at starting position");
+
+            synchronized (armMoving) {
+                armMoving.notifyAll();
+            }
 
             while (Launcher.isRunning()) {
                 //wait for new position
-                try {
-                    positionsQueue.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                synchronized (positionsQueue) {
+                    try {
+                        positionsQueue.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
                 System.out.println("[ARM" + armId + "] received new position");
 
@@ -195,10 +212,12 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
                             currentPos = arm.getPosition();
                         }
                     }
-
+                    arm.stop();
                     armMoving[armId] = false;
                     System.out.println("[ARM" + armId + "] at goal position");
-                    armMoving.notifyAll();
+                    synchronized (armMoving) {
+                        armMoving.notifyAll();
+                    }
                 }
             }
         }
