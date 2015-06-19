@@ -71,11 +71,8 @@ public class Launcher {
             Class.forName("com.pi4j.io.gpio.GpioFactory");
             return true;
         } catch (ClassNotFoundException e) {
-            System.err.println("Pi4J could not be found in /opt/pi4j");
+            System.err.println("Pi4J could not be found in /opt/pi4j or in classpath");
             System.err.println("please install Pi4J in the default location");
-            System.err.println();
-            System.err.println();
-            e.printStackTrace();
             return false;
         }
     }
