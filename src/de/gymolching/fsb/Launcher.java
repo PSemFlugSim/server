@@ -18,7 +18,7 @@ public class Launcher {
     //program name
     private static final String NAME = "FSB";
     //program version
-    private static final String VERSION = "0.0";
+    private static final String VERSION = "0.1";
 
     //whether the program should currently be running
     private static boolean running;
