@@ -1,11 +1,10 @@
-package de.gymolching.fsb.network.implementation;
+package de.gymolching.fsb.server.implementation;
 
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
+import java.util.*;
 
-import de.gymolching.fsb.api.FSBPosition;
-import de.gymolching.fsb.network.api.FSBServerInterface;
+import de.gymolching.fsb.server.api.*;
 
 public class FSBServer implements FSBServerInterface, Runnable
 {
@@ -93,10 +92,19 @@ public class FSBServer implements FSBServerInterface, Runnable
 						System.out.println("[Server] No new position received yet. Staying Idle");
 
 					this.positions.wait();
+
+					if (this.verbose)
+						System.out.println("[Server] Done waiting");
+
+					if (this.positions.size() == 0)
+					{
+						System.out
+								.println("[Server] Positions array still empty. Assuming client disconnected. returning null and exiting.");
+						return null;
+					}
 				}
 			}
-		}
-		while (shouldWait == true);
+		} while (shouldWait == true);
 
 		synchronized (this.positions)
 		{
@@ -125,9 +133,11 @@ public class FSBServer implements FSBServerInterface, Runnable
 			try
 			{
 				Socket connSocket = this.serverSocket.accept();
+				connSocket.setSoTimeout(30000); // Disconnect after 30 seconds no input
 				DataInputStream dis = new DataInputStream(connSocket.getInputStream());
 				if (this.verbose)
-					System.out.println("[Server] Client connected " + connSocket.getInetAddress() + ":" + connSocket.getPort());
+					System.out.println("[Server] Client connected " + connSocket.getInetAddress()
+							+ ":" + connSocket.getPort());
 
 				while (connSocket.isConnected())
 				{
@@ -136,10 +146,15 @@ public class FSBServer implements FSBServerInterface, Runnable
 					try
 					{
 						connInputString = dis.readUTF();
+						System.out.println("tmp: connInputStream: " + connInputString);
 					}
 					catch (EOFException e)
 					{
-//						e.printStackTrace();
+						// e.printStackTrace();
+						synchronized (this.positions)
+						{
+							this.positions.notifyAll();
+						}
 						break;
 					}
 
@@ -154,15 +169,16 @@ public class FSBServer implements FSBServerInterface, Runnable
 				}
 
 				if (this.verbose)
-					System.out.println("[Server] Client disconnected. Closing socket and listening for new Connection...");
+					System.out
+							.println("[Server] Client disconnected. Closing socket and listening for new Connection...");
 
 				dis.close();
 				connSocket.close();
 			}
 			catch (IOException e)
 			{
-//				e.printStackTrace();
-				
+				// e.printStackTrace();
+
 				try
 				{
 					this.serverSocket.close();
