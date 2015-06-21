@@ -11,6 +11,9 @@ import java.util.ArrayList;
  */
 public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
+    //how many steps are available to 100%
+    private static final int MAX_STEPS = 37;
+
     //how long to wait between each position poll
     private static final int POLLING_RATE_TIME_MILLIS = 100;
 
@@ -53,12 +56,12 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     @Override
     public void onPositionUpdate(FSBPosition position) {
         int[] lengths = new int[6];
-        lengths[0] = position.getLength1();
-        lengths[1] = position.getLength2();
-        lengths[2] = position.getLength3();
-        lengths[3] = position.getLength4();
-        lengths[4] = position.getLength5();
-        lengths[5] = position.getLength6();
+        lengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+        lengths[1] = (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+        lengths[2] = (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+        lengths[3] = (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+        lengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+        lengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
 
         synchronized (positionsQueue) {
             if (currentPositionGoal != null) {
