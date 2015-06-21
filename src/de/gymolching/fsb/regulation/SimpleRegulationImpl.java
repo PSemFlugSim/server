@@ -17,17 +17,17 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     //how long to wait between each position poll
     private static final int POLLING_RATE_TIME_MILLIS = 100;
 
-    //ArrayList of received positions not currently executed
-    private final ArrayList<int[]> positionsQueue;
-
-    //current goal position; null if none
-    private int[] currentPositionGoal;
+    //position provided (FSBServer)
+    private PositionProvider positionProvider;
 
     //array of arms
     private final ArmInterface[] arms;
 
     //one thread per arm
     private final Thread[] armThreads;
+
+    //current goal lengths for every arm
+    private final int[] lengths;
 
     //whether an arm is currently moving
     private final boolean[] armMoving;
@@ -36,8 +36,10 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     private final Thread mainWatchThread;
 
     public SimpleRegulationImpl(ArmInterface[] arms) {
-        this.positionsQueue = new ArrayList<>();
         this.arms = arms;
+
+        lengths = new int[6];
+
         armMoving = new boolean[arms.length];
         for (int i = 0; i < arms.length; i++) {
             armMoving[i] = true;
@@ -54,23 +56,8 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     }
 
     @Override
-    public void onPositionUpdate(FSBPosition position) {
-        int[] lengths = new int[6];
-        lengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-        lengths[1] = (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-        lengths[2] = (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-        lengths[3] = (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-        lengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-        lengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-
-        synchronized (positionsQueue) {
-            if (currentPositionGoal != null) {
-                this.positionsQueue.add(lengths);
-            } else {
-                this.currentPositionGoal = lengths;
-                this.positionsQueue.notifyAll();
-            }
-        }
+    public void setPositionProvider(PositionProvider positionProvider) {
+        this.positionProvider = positionProvider;
     }
 
     //Main watch thread
@@ -100,25 +87,41 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
         while (Launcher.isRunning()) {
 
-            //check if currentPositionGoal is available
-            if (this.currentPositionGoal == null) {
-                synchronized (this.positionsQueue) {
+            //get most recent position
+            FSBPosition position = null;
+            int tryI = 0;
+            while (position == null) {
+                if (tryI > 0) {
                     try {
-                        //wait for a new position
-                        System.out.println("[MWT] waiting for new position");
-                        this.positionsQueue.wait();
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
+
+                try {
+                    position = positionProvider.getMostRecentPositionUpdate();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                tryI++;
             }
+
+            //set lengths
+            lengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+            lengths[1] = (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+            lengths[2] = (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+            lengths[3] = (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+            lengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+            lengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
 
             System.out.println("[MWT] received new position");
 
             //set armMoving to true, notify ArmThreads
             for (int i = 0; i < armMoving.length; i++) armMoving[i] = true;
-            synchronized (this.positionsQueue) {
-                this.positionsQueue.notifyAll();
+
+            synchronized (this.lengths) {
+                this.lengths.notifyAll();
             }
 
             //wait for all arms to be done moving
@@ -138,17 +141,6 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
                     }
                 }
                 System.out.println("[MWT] change in armMoving");
-            }
-
-            //check for new positions in positionsQueue
-            synchronized (positionsQueue) {
-                if (this.positionsQueue.size() > 0) {
-                    this.currentPositionGoal = this.positionsQueue.remove(0);
-                    System.out.println("[MWT] new position in positionsQueue set as currentPositionGoal");
-                } else {
-                    this.currentPositionGoal = null;
-                    System.out.println("[MWT] no new position available; currentPositionGoal = null");
-                }
             }
         }
     }
@@ -178,20 +170,21 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
             }
 
             while (Launcher.isRunning()) {
-                //wait for new position
-                synchronized (positionsQueue) {
+
+                synchronized (lengths) {
                     try {
-                        positionsQueue.wait();
+                        lengths.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
+
                 System.out.println("[ARM" + armId + "] received new position");
 
-                if (currentPositionGoal != null) {
+                if (lengths != null) {
                     //drive to new position
                     int currentPos = arm.getPosition();
-                    int goalPos = currentPositionGoal[armId];
+                    int goalPos = lengths[armId];
                     if (currentPos > goalPos) {
                         arm.setSpeed(100);
                         arm.startBackward();

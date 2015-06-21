@@ -6,6 +6,7 @@ import de.gymolching.fsb.hal.ArmFactory;
 import de.gymolching.fsb.halApi.ArmInterface;
 import de.gymolching.fsb.network.api.FSBServerInterface;
 import de.gymolching.fsb.network.implementation.FSBServer;
+import de.gymolching.fsb.regulation.PositionProvider;
 import de.gymolching.fsb.regulation.RegulationInterface;
 import de.gymolching.fsb.regulation.SimpleRegulationImpl;
 
@@ -40,7 +41,7 @@ public class MainLoopHandler {
 
     private MainLoopHandler() {
         try {
-            this.server = new FSBServer(SERVER_PORT, true);
+            this.server = new FSBServer(SERVER_PORT, false);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -64,16 +65,10 @@ public class MainLoopHandler {
      * Starts the main loop.
      */
     public void mainLoop() {
-        while (Launcher.isRunning()) {
-            FSBPosition latestPosition = null;
-            try {
-                latestPosition = this.server.getMostRecentPositionUpdate();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (latestPosition != null) {
-                regulationInterface.onPositionUpdate(latestPosition);
-            }
+        if (server instanceof PositionProvider) {
+            regulationInterface.setPositionProvider((PositionProvider) server);
+        } else {
+            throw new IllegalStateException("FSBServer has to be a PositionProvider!");
         }
     }
 

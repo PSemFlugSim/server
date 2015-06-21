@@ -6,8 +6,9 @@ import java.util.ArrayList;
 
 import de.gymolching.fsb.api.FSBPosition;
 import de.gymolching.fsb.network.api.FSBServerInterface;
+import de.gymolching.fsb.regulation.PositionProvider;
 
-public class FSBServer implements FSBServerInterface, Runnable
+public class FSBServer implements FSBServerInterface, Runnable, PositionProvider
 {
 	private ServerSocket serverSocket = null;
 	private Thread serverThread = null;
