@@ -91,13 +91,19 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
             //get most recent position
             FSBPosition position = null;
-            while (position == null) {
-                try {
-                    position = positionProvider.getMostRecentPositionUpdate();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+
+            try {
+                position = positionProvider.getMostRecentPositionUpdate();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+
+            //exit if position is null
+            if (position == null) {
+                System.err.println("PositionProvider provided empty (null) position");
+                Launcher.exit();
+            }
+
 
             System.out.println("[MWT] new position: " + position.toString());
 

@@ -23,9 +23,13 @@ public class Launcher {
     //whether the program should currently be running
     private static boolean running;
 
+    //whether the program is currently exiting
+    private static boolean exiting;
+
     public static void main(String[] args) {
         if (checkForPi4J()) {
             running = true;
+            exiting = false;
 
             //create thread for program
             Thread t = new Thread(() -> {
@@ -37,6 +41,17 @@ public class Launcher {
 
             //start MiniConsole (blocking until user inputs "exit")
             new MiniConsole().start();
+
+            exit();
+        }
+    }
+
+    /**
+     * Exits the program.
+     */
+    public static void exit() {
+        if (!exiting) {
+            exiting = true;
 
             //stop program
             System.out.println("waiting for shutdown...");
