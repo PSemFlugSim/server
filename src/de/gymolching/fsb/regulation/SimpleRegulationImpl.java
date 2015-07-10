@@ -87,25 +87,19 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
 
         while (Launcher.isRunning()) {
 
+            System.out.println("[MWT] waiting for new position...");
+
             //get most recent position
             FSBPosition position = null;
-            int tryI = 0;
             while (position == null) {
-                if (tryI > 0) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
                 try {
                     position = positionProvider.getMostRecentPositionUpdate();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                tryI++;
             }
+
+            System.out.println("[MWT] new position: " + position.toString());
 
             //set lengths
             lengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
@@ -123,6 +117,8 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
             synchronized (this.lengths) {
                 this.lengths.notifyAll();
             }
+
+            System.out.println("DEB notified");
 
             //wait for all arms to be done moving
             boolean allDone = false;
