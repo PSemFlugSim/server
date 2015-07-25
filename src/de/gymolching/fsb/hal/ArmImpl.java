@@ -14,6 +14,10 @@ import de.gymolching.fsb.halApi.ArmInterface;
  */
 public class ArmImpl implements ArmInterface {
 
+    //max position of motor
+    //amount of steps from 0% to 100%
+    private final static int MAX_ABS_POSITION = 37;
+
     //max pwm value (=100%) for pwm chip
     private final static int PWM_MAX_VALUE = 24999;
 
@@ -217,6 +221,30 @@ public class ArmImpl implements ArmInterface {
     public int getPosition() {
         int counterInput = readCurrentCounterValue() * this.currentDirection;
         return this.counterBuffer + counterInput;
+    }
+
+    /**
+     * Returns the maximum absolute position of the motor.
+     *
+     * @return the maximum absolute position of the motor
+     */
+    @Override
+    public int getMaxPosition() {
+        return 0;
+    }
+
+    /**
+     * Returns the arm's current direction.
+     * <p>
+     * -1 equals backwards
+     * 0 equals stopped
+     * +1 equals forward
+     *
+     * @return the arm's current direction
+     */
+    @Override
+    public int getDirection() {
+        return currentDirection;
     }
 
     /**

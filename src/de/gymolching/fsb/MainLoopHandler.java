@@ -8,7 +8,7 @@ import de.gymolching.fsb.network.api.FSBServerInterface;
 import de.gymolching.fsb.network.implementation.FSBServer;
 import de.gymolching.fsb.regulation.PositionProvider;
 import de.gymolching.fsb.regulation.RegulationInterface;
-import de.gymolching.fsb.regulation.SimpleRegulationImpl;
+import de.gymolching.fsb.regulation.SingleThreadRegulation;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -63,7 +63,7 @@ public class MainLoopHandler {
             }
         }
 
-        regulationInterface = new SimpleRegulationImpl(arms);
+        regulationInterface = new SingleThreadRegulation(arms);
     }
 
     /**

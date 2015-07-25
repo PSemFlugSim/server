@@ -43,10 +43,26 @@ public interface ArmInterface {
     void stopByPwm();
 
     /**
-     * Returns the position of the motor as counted by the counter.
+     * Returns the absolute position of the motor.
      * @return the position of the motor
      */
     int getPosition();
+
+    /**
+     * Returns the maximum absolute position of the motor.
+     * @return the maximum absolute position of the motor
+     */
+    int getMaxPosition();
+
+    /**
+     * Returns the arm's current direction.
+     *
+     * -1 equals backwards
+     *  0 equals stopped
+     * +1 equals forward
+     * @return  the arm's current direction
+     */
+    int getDirection();
 
     /**
      * Moves the motor into starting position.
