@@ -12,5 +12,5 @@ public interface PositionProvider {
      * @throws InterruptedException when the blocking is interrupted
      * @return the most recent position
      */
-    public FSBPosition getMostRecentPositionUpdate() throws InterruptedException;
+    FSBPosition getMostRecentPositionUpdate() throws InterruptedException;
 }

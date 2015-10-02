@@ -4,6 +4,7 @@ import de.gymolching.fsb.Launcher;
 import de.gymolching.fsb.api.FSBPosition;
 import de.gymolching.fsb.halApi.ArmInterface;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -67,13 +68,42 @@ public class SingleThreadRegulation implements RegulationInterface {
                         armLengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) arms[4].getMaxPosition());
                         armLengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) arms[5].getMaxPosition());
 
+                        //calculate arm position diffs and then their speeds
+                        int[] armPositionDiffs = new int[ARM_AMOUNT];
+                        armPositionDiffs[0] = Math.abs(arms[0].getPosition() - armLengths[0]);
+                        armPositionDiffs[1] = Math.abs(arms[1].getPosition() - armLengths[1]);
+                        armPositionDiffs[2] = Math.abs(arms[2].getPosition() - armLengths[2]);
+                        armPositionDiffs[3] = Math.abs(arms[3].getPosition() - armLengths[3]);
+                        armPositionDiffs[4] = Math.abs(arms[4].getPosition() - armLengths[4]);
+                        armPositionDiffs[5] = Math.abs(arms[5].getPosition() - armLengths[5]);
+                        for (int i = 0; i < armPositionDiffs.length; i++) {
+                            log.fine("POS DIFF " + i + ": " + armPositionDiffs[i]);
+                        }
+
+                        //get longest position diff to assign 100% speed to
+                        int longestDiff = Arrays.stream(armPositionDiffs).max().getAsInt();
+                        log.fine("longestDiff=" + longestDiff);
+
+                        int[] armSpeeds = new int[ARM_AMOUNT];
+                        armSpeeds[0] = (int)Math.round(((double)armPositionDiffs[0] / (double)longestDiff) * 100);
+                        armSpeeds[1] = (int)Math.round(((double)armPositionDiffs[1] / (double)longestDiff) * 100);
+                        armSpeeds[2] = (int)Math.round(((double)armPositionDiffs[2] / (double)longestDiff) * 100);
+                        armSpeeds[3] = (int)Math.round(((double)armPositionDiffs[3] / (double)longestDiff) * 100);
+                        armSpeeds[4] = (int)Math.round(((double)armPositionDiffs[4] / (double)longestDiff) * 100);
+                        armSpeeds[5] = (int)Math.round(((double)armPositionDiffs[5] / (double)longestDiff) * 100);
+
+                        for (int i = 0; i < armSpeeds.length; i++) {
+                            log.fine("ARM SPEED " + i + ": " + armSpeeds[i]);
+                        }
+
+
                         //start each arm to move into the right direction
                         for (int i = 0; i < ARM_AMOUNT; i++) {
                             if (arms[i].getPosition() < armLengths[i]) {
-                                arms[i].setSpeed(100);
+                                arms[i].setSpeed(armSpeeds[i]);
                                 arms[i].startForward();
                             } else {
-                                arms[i].setSpeed(100);
+                                arms[i].setSpeed(armSpeeds[i]);
                                 arms[i].startBackward();
                             }
                         }
