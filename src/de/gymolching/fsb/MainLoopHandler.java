@@ -4,7 +4,6 @@ import com.pi4j.io.gpio.GpioFactory;
 import de.gymolching.fsb.hal.ArmFactoryImpl;
 import de.gymolching.fsb.halApi.ArmFactory;
 import de.gymolching.fsb.halApi.ArmInterface;
-import de.gymolching.fsb.halFake.FakeArmFactory;
 import de.gymolching.fsb.network.api.FSBServerInterface;
 import de.gymolching.fsb.network.implementation.FSBServer;
 import de.gymolching.fsb.regulation.PositionProvider;
@@ -51,11 +50,8 @@ public class MainLoopHandler {
             e.printStackTrace();
         }
 
-        if (Launcher.isFakeMode()) {
-            this.armFactory = FakeArmFactory.getInstance();
-        } else {
-            this.armFactory = ArmFactoryImpl.getInstance(GpioFactory.getInstance());
-        }
+        this.armFactory = ArmFactoryImpl.getInstance(GpioFactory.getInstance());
+
 
         this.arms = new ArmInterface[ARM_AMOUNT];
 
@@ -69,7 +65,6 @@ public class MainLoopHandler {
 
         regulationInterface = new SimpleRegulationImpl(arms);
     }
-
 
     /**
      * Starts the main loop.

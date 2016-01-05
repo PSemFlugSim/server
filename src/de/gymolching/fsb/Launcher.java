@@ -12,7 +12,6 @@ import java.util.logging.*;
  */
 public class Launcher {
 
-
     //Logging
     private static final Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
@@ -27,9 +26,6 @@ public class Launcher {
     //whether the program is currently exiting
     private static boolean exiting;
 
-    //whether the program is running in fake mode (e.g. not on a pi)
-    private static boolean fakeMode;
-
     //Launcher Impl
     private static LauncherInterface launcher;
 
@@ -37,56 +33,26 @@ public class Launcher {
         //setup logging
         setupLogging();
 
-        if (args.length > 0 && args[0].equalsIgnoreCase("fakeMode")) {
-            log.info("fake mode enabled");
-            fakeMode = true;
-        } else {
-            fakeMode = false;
-        }
+        launcher = new LauncherImpl();
 
-        if (fakeMode) {
-            launcher = new LauncherFakeImpl();
-
-            log.fine("running in fake mode... not checking for pi4j");
+        log.fine("checking for pi4j...");
+        if (checkForPi4J()) {
+            log.finer("pi4j in classpath");
             running = true;
             exiting = false;
 
+
             //create thread for program
             Thread t = new Thread(() -> {
-
                 MainLoopHandler.getInstance().mainLoop();
-
             }, "program");
             t.start();
+            log.fine("MainLoopHandler started");
 
             //start MiniConsole (blocking until user inputs "exit")
             new MiniConsole().start();
 
             exit();
-
-        } else {
-            launcher = new LauncherImpl();
-
-            log.fine("checking for pi4j...");
-            if (checkForPi4J()) {
-                log.finer("pi4j in classpath");
-                running = true;
-                exiting = false;
-
-
-                //create thread for program
-                Thread t = new Thread(() -> {
-                    MainLoopHandler.getInstance().mainLoop();
-
-                }, "program");
-                t.start();
-                log.fine("MainLoopHandler started");
-
-                //start MiniConsole (blocking until user inputs "exit")
-                new MiniConsole().start();
-
-                exit();
-            }
         }
     }
 
@@ -187,14 +153,6 @@ public class Launcher {
      */
     public static void stop() {
         running = false;
-    }
-
-    /**
-     * Returns whether the program is running in fake mode.
-     * @return whether the program is running in fake mode
-     */
-    public static boolean isFakeMode() {
-        return fakeMode;
     }
 
     /**
