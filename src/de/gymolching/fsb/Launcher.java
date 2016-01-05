@@ -29,6 +29,9 @@ public class Launcher {
     //Launcher Impl
     private static LauncherInterface launcher;
 
+    //hal test
+    private static HalTest halTest = null;
+
     public static void main(String[] args) {
         //setup logging
         setupLogging();
@@ -41,13 +44,10 @@ public class Launcher {
             running = true;
             exiting = false;
 
-
-            //create thread for program
-            Thread t = new Thread(() -> {
-                MainLoopHandler.getInstance().mainLoop();
-            }, "program");
-            t.start();
-            log.fine("MainLoopHandler started");
+            //initialize new halTest
+            new Thread(() -> {
+                halTest = new HalTest();
+            }).start();
 
             //start MiniConsole (blocking until user inputs "exit")
             new MiniConsole().start();
@@ -94,12 +94,13 @@ public class Launcher {
      * Exits the program.
      */
     public static void exit() {
+        //only execute this method once
         if (!exiting) {
+            exiting = true;
             log.finest("exiting...");
             log.finest(".");
             log.finest(".");
             log.finest(".");
-            exiting = true;
 
             //stop program
             System.out.println("waiting for shutdown...");
@@ -187,7 +188,13 @@ public class Launcher {
                         System.out.println("help    prints this help");
                         break;
                     default:
-                        System.err.println("Unknown command. Enter help for a list of commands.");
+                        if (halTest != null) {
+                            boolean worked = halTest.interpretCommand(input);
+                            if (!worked) System.err.println("Unknown command. Enter help for a list of commands.");
+                        } else {
+                            System.err.println("hal test not yet initialized");
+                            System.err.println("Unknown command. Enter help for a list of commands.");
+                        }
                         break;
                 }
 
