@@ -30,9 +30,6 @@ public class ArmImpl implements ArmInterface {
     //amount of bits of the counter used
     private final static int COUNTER_BITS = 12;
 
-    //leftover pin that was connected to the counter-chip's clock pin for debugging purposes
-    private final static Pin COUNTER_CLOCK_PIN = MCP23017Pin.GPIO_B5;
-
     //address of pin connected to counter chip's clear pin
     private final static Pin COUNTER_CLEAR_PIN = MCP23017Pin.GPIO_B4;
 
@@ -100,12 +97,22 @@ public class ArmImpl implements ArmInterface {
 
         //initializes pins connected to the counter chip's output pins
         this.counterQ = new GpioPinDigitalInput[COUNTER_BITS];
-        for (int i = 0; i < COUNTER_BITS; i++) {
-            this.counterQ[i] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.ALL[i], MCP23017Pin.ALL[i].getName() + " (counter " + i + ")");
-            if (i == COUNTER_BITS - 2) {
-                this.counterQ[i].addListener(new CounterOverflowListener());
-            }
-        }
+        this.counterQ[0] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_B5, MCP23017Pin.GPIO_B5.getName() + " (counter " + 0 + ")");//A
+        this.counterQ[1] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A1, MCP23017Pin.GPIO_A1.getName() + " (counter " + 0 + ")");//B
+        this.counterQ[2] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A2, MCP23017Pin.GPIO_A2.getName() + " (counter " + 0 + ")");//C
+        this.counterQ[3] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A3, MCP23017Pin.GPIO_A3.getName() + " (counter " + 0 + ")");//D
+        this.counterQ[4] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A5, MCP23017Pin.GPIO_A5.getName() + " (counter " + 0 + ")");//E
+        this.counterQ[5] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A6, MCP23017Pin.GPIO_A6.getName() + " (counter " + 0 + ")");//F
+        this.counterQ[6] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A4, MCP23017Pin.GPIO_A4.getName() + " (counter " + 0 + ")");//G
+        this.counterQ[7] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_B2, MCP23017Pin.GPIO_B2.getName() + " (counter " + 0 + ")");//H
+        this.counterQ[8] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_B3, MCP23017Pin.GPIO_B3.getName() + " (counter " + 0 + ")");//I
+        this.counterQ[9] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_B1, MCP23017Pin.GPIO_B1.getName() + " (counter " + 0 + ")");//J
+        this.counterQ[10] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_B0, MCP23017Pin.GPIO_B0.getName() + " (counter " + 0 + ")");//K
+        this.counterQ[11] = gpio.provisionDigitalInputPin(expGpioProvider, MCP23017Pin.GPIO_A7, MCP23017Pin.GPIO_A7.getName() + " (counter " + 0 + ")");//L
+
+        this.counterQ[COUNTER_BITS - 2].addListener(new CounterOverflowListener());
+
+
 
         //initializes others and clear counter
         this.counterClr = gpio.provisionDigitalOutputPin(expGpioProvider, COUNTER_CLEAR_PIN, COUNTER_CLEAR_PIN.getName() + " (counter clr)", PinState.LOW);
