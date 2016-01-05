@@ -8,6 +8,7 @@ import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinPwmOutput;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CFactory;
+import de.gymolching.fsb.halApi.ArmFactory;
 import de.gymolching.fsb.halApi.ArmInterface;
 
 import java.io.IOException;
@@ -17,18 +18,18 @@ import java.math.BigDecimal;
  * Creates instances of hexapod arms.
  * @author sschaeffner
  */
-public class ArmFactory {
+public class ArmFactoryImpl implements ArmFactory {
 
-    //singleton instance of ArmFactory
-    private static ArmFactory instance;
+    //singleton instance of ArmFactoryImpl
+    private static ArmFactoryImpl instance;
 
     /**
-     * Returns an instance of an ArmFactory to provide arms.
+     * Returns an instance of an ArmFactoryImpl to provide arms.
      * @param gpioController    a GpioController
-     * @return instance of an ArmFactory to provide arms.
+     * @return instance of an ArmFactoryImpl to provide arms.
      */
-    public static ArmFactory getInstance(final GpioController gpioController) {
-        if (instance == null) instance = new ArmFactory(gpioController);
+    public static ArmFactoryImpl getInstance(final GpioController gpioController) {
+        if (instance == null) instance = new ArmFactoryImpl(gpioController);
         return instance;
     }
 
@@ -57,10 +58,10 @@ public class ArmFactory {
     private PCA9685GpioProvider pwmGpioProvider;
 
     /**
-     * Initializes an ArmFactory with a GpioController.
+     * Initializes an ArmFactoryImpl with a GpioController.
      * @param gpio an instance of a pi4j GpioController
      */
-    private ArmFactory(final GpioController gpio) {
+    private ArmFactoryImpl(final GpioController gpio) {
         this.gpio = gpio;
 
         try {

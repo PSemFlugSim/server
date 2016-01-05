@@ -1,19 +1,20 @@
 package de.gymolching.fsb;
 
 import com.pi4j.io.gpio.GpioFactory;
-import de.gymolching.fsb.hal.ArmFactory;
-import de.gymolching.fsb.halApi.ArmInterface;
-import de.gymolching.fsb.network.api.FSBServerInterface;
-import de.gymolching.fsb.network.implementation.FSBServer;
 
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.logging.*;
 
 /**
  * This checks for pi4j and launches the program.
  * @author sschaeffner
  */
 public class Launcher {
+
+
+    //Logging
+    private static final Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     //program name
     private static final String NAME = "FSB";
@@ -26,8 +27,27 @@ public class Launcher {
     //whether the program is currently exiting
     private static boolean exiting;
 
+    //whether the program is running in fake mode (e.g. not on a pi)
+    private static boolean fakeMode;
+
+    //Launcher Impl
+    private static LauncherInterface launcher;
+
     public static void main(String[] args) {
-        if (checkForPi4J()) {
+        //setup logging
+        setupLogging();
+
+        if (args.length > 0 && args[0].equalsIgnoreCase("fakeMode")) {
+            log.info("fake mode enabled");
+            fakeMode = true;
+        } else {
+            fakeMode = false;
+        }
+
+        if (fakeMode) {
+            launcher = new LauncherFakeImpl();
+
+            log.fine("running in fake mode... not checking for pi4j");
             running = true;
             exiting = false;
 
@@ -43,7 +63,65 @@ public class Launcher {
             new MiniConsole().start();
 
             exit();
+
+        } else {
+            launcher = new LauncherImpl();
+
+            log.fine("checking for pi4j...");
+            if (checkForPi4J()) {
+                log.finer("pi4j in classpath");
+                running = true;
+                exiting = false;
+
+
+                //create thread for program
+                Thread t = new Thread(() -> {
+                    MainLoopHandler.getInstance().mainLoop();
+
+                }, "program");
+                t.start();
+                log.fine("MainLoopHandler started");
+
+                //start MiniConsole (blocking until user inputs "exit")
+                new MiniConsole().start();
+
+                exit();
+            }
         }
+    }
+
+    /**
+     * Sets up the main logger.
+     */
+    private static void setupLogging() {
+        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
+        // suppress the logging output to the console
+        Logger rootLogger = Logger.getLogger("");
+        Handler[] handlers = rootLogger.getHandlers();
+        if (handlers[0] instanceof ConsoleHandler) {
+            rootLogger.removeHandler(handlers[0]);
+        }
+
+        logger.setLevel(Level.ALL);
+
+        try {
+            FileHandler fileTxt = new FileHandler("log.txt");
+            // create a TXT formatter
+            SimpleFormatter formatterTxt = new SimpleFormatter();
+            fileTxt.setFormatter(formatterTxt);
+            logger.addHandler(fileTxt);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler.setLevel(Level.INFO);
+
+        logger.addHandler(consoleHandler);
+
+        logger.fine("logger fine");
+        log.finer("log finer");
     }
 
     /**
@@ -51,6 +129,10 @@ public class Launcher {
      */
     public static void exit() {
         if (!exiting) {
+            log.finest("exiting...");
+            log.finest(".");
+            log.finest(".");
+            log.finest(".");
             exiting = true;
 
             //stop program
@@ -105,6 +187,14 @@ public class Launcher {
      */
     public static void stop() {
         running = false;
+    }
+
+    /**
+     * Returns whether the program is running in fake mode.
+     * @return whether the program is running in fake mode
+     */
+    public static boolean isFakeMode() {
+        return fakeMode;
     }
 
     /**

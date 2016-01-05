@@ -1,9 +1,10 @@
 package de.gymolching.fsb;
 
 import com.pi4j.io.gpio.GpioFactory;
-import de.gymolching.fsb.api.FSBPosition;
-import de.gymolching.fsb.hal.ArmFactory;
+import de.gymolching.fsb.hal.ArmFactoryImpl;
+import de.gymolching.fsb.halApi.ArmFactory;
 import de.gymolching.fsb.halApi.ArmInterface;
+import de.gymolching.fsb.halFake.FakeArmFactory;
 import de.gymolching.fsb.network.api.FSBServerInterface;
 import de.gymolching.fsb.network.implementation.FSBServer;
 import de.gymolching.fsb.regulation.PositionProvider;
@@ -11,12 +12,16 @@ import de.gymolching.fsb.regulation.RegulationInterface;
 import de.gymolching.fsb.regulation.SimpleRegulationImpl;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * Handles the main loop connecting server, regulation and hal.
  * @author sschaeffner
  */
 public class MainLoopHandler {
+
+    //Logging
+    private static final Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     //amount of arms of the hexapod
     private static final int ARM_AMOUNT = 6;
@@ -46,7 +51,12 @@ public class MainLoopHandler {
             e.printStackTrace();
         }
 
-        this.armFactory = ArmFactory.getInstance(GpioFactory.getInstance());
+        if (Launcher.isFakeMode()) {
+            this.armFactory = FakeArmFactory.getInstance();
+        } else {
+            this.armFactory = ArmFactoryImpl.getInstance(GpioFactory.getInstance());
+        }
+
         this.arms = new ArmInterface[ARM_AMOUNT];
 
         for (int i = 0; i < ARM_AMOUNT; i++) {
