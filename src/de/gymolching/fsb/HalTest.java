@@ -31,13 +31,20 @@ public class HalTest {
 
         this.arms = new ArmInterface[ARM_AMOUNT];
 
-        for (int i = 0; i < ARM_AMOUNT; i++) {
+        /*for (int i = 0; i < ARM_AMOUNT; i++) {
             try {
                 this.arms[i] = armFactory.provideArm(i);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }*/
+        try {
+            this.arms[4] = armFactory.provideArm(4);
+            this.arms[5] = armFactory.provideArm(5);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
 
         System.out.println("HAL TEST initialized");
     }
@@ -132,27 +139,51 @@ public class HalTest {
     }
 
     private void startFwd(int nr) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         arms[nr].startForward();
     }
 
     private void startBwd(int nr) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         arms[nr].startBackward();
     }
 
     private void stop(int nr) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         arms[nr].stop();
     }
 
     private void setSpeed(int nr, int percentage) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         arms[nr].setSpeed(percentage);
     }
 
     private void printPosition(int nr) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         int pos = arms[nr].getPosition();
         System.out.println("position of arm " + nr + ": " + pos);
     }
 
     private void reset(int nr) {
+        if (arms[nr] == null) {
+            System.err.println("Arm " + nr + " not intialized");
+            return;
+        }
         arms[nr].resetPositionBuffer();
     }
 }
