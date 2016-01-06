@@ -237,7 +237,7 @@ public class ArmImpl implements ArmInterface {
      */
     @Override
     public int getMaxPosition() {
-        return 0;
+        return MAX_ABS_POSITION;
     }
 
     /**
