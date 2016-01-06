@@ -59,7 +59,7 @@ public class HalTest {
         String[] cmdParts = cmd.split(" ");
 
         if (cmdParts[0].equalsIgnoreCase("hal")) {
-            if (cmdParts[1].equalsIgnoreCase("help")) {
+            if (cmdParts.length == 1 || (cmdParts.length >= 2 && cmdParts[1].equalsIgnoreCase("help"))) {
                 System.out.println("HAL TEST");
                 System.out.println("hal [nr] start [f/b]  starts motor [nr] [f/b]");
                 System.out.println("hal [nr] stop         stops motor [nr]");
@@ -67,6 +67,7 @@ public class HalTest {
                 System.out.println("hal [nr] pos          returns position of arm [nr]");
                 System.out.println("hal [nr] reset        resets position buffer of arm [nr]");
                 System.out.println("hal help              prints this help");
+                return true;
             } else if (cmdParts.length >= 3) {
                 int armNr = -1;
                 try {
@@ -132,6 +133,7 @@ public class HalTest {
                 } else {
                     System.err.println("arm nr not recognized");
                 }
+                return true;
             }
         }
 
