@@ -110,6 +110,7 @@ public class HalTest {
                                 }
 
                                 if (speed >= 0 && speed <= 100) {
+                                    System.out.println("setting arm " + armNr + " speed to " + speed);
                                     setSpeed(armNr, speed);
                                 } else {
                                     System.err.println("speed has to be between 0 and 100");
