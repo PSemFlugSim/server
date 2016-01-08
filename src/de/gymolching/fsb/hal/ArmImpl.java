@@ -260,6 +260,7 @@ public class ArmImpl implements ArmInterface {
      */
     @Override
     public void moveToStartingPosition() {
+        System.out.println("moving to starting position...");
         //save speed
         int latestSpeedS = this.lastSpeed;
         setSpeed(50);
@@ -277,6 +278,7 @@ public class ArmImpl implements ArmInterface {
                 e.printStackTrace();
             }
             lastPos = newPos;
+            System.out.println("pos = " + newPos);
         } while ((newPos = getPosition()) != lastPos);
 
 
@@ -301,6 +303,7 @@ public class ArmImpl implements ArmInterface {
      */
     @Override
     public void resetPositionBuffer() {
+        System.out.println("reset pos buffer");
         this.counterBuffer = 0;
         clearCounter();
     }

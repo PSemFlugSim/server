@@ -40,6 +40,8 @@ public class SingleThreadRegulation implements RegulationInterface {
         mainThread = new Thread(() -> {
             //move to starting position
             for (int i = 0; i < ARM_AMOUNT; i++) {
+                if(arms[i] == null) continue;
+                System.out.println("arm #" + i);
                 arms[i].moveToStartingPosition();
             }
 
@@ -99,6 +101,7 @@ public class SingleThreadRegulation implements RegulationInterface {
 
                         //start each arm to move into the right direction
                         for (int i = 0; i < ARM_AMOUNT; i++) {
+                            if (arms[i] == null) continue;
                             if (arms[i].getPosition() < armLengths[i]) {
                                 arms[i].setSpeed(armSpeeds[i]);
                                 arms[i].startForward();
@@ -114,6 +117,7 @@ public class SingleThreadRegulation implements RegulationInterface {
 
                             //check each arm's position if it reached its desired position
                             for (int i = 0; i < ARM_AMOUNT; i++) {
+                                if (arms[i] == null) continue;
                                 if (arms[i].getDirection() == 1) {
                                     //if currently moving forward, check if position is greater/equal than desired position
                                     if (arms[i].getPosition() >= armLengths[i]) {
@@ -148,8 +152,12 @@ public class SingleThreadRegulation implements RegulationInterface {
         mainThread.start();
     }
 
-    private static boolean allTrue(boolean[] bools) {
-        for (boolean b : bools) if (!b) return false;
+    private boolean allTrue(boolean[] bools) {
+        for (int i = 0; i < ARM_AMOUNT; i++) {
+            if (arms[i] != null) {
+                if (!bools[i]) return false;
+            }
+        }
         return true;
     }
 
