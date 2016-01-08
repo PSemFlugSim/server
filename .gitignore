@@ -1,3 +1,7 @@
+# Eclipse bullshit
+.project
+.classpath
+
 *.class
 
 # Mobile Tools for Java (J2ME)
@@ -19,3 +23,4 @@ hs_err_pid*
 
 #ant build
 buildToPi.xml
+/bin/

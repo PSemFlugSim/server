@@ -3,6 +3,7 @@ package de.gymolching.fsb.regulation;
 import de.gymolching.fsb.Launcher;
 import de.gymolching.fsb.api.FSBPosition;
 import de.gymolching.fsb.halApi.ArmInterface;
+import de.gymolching.fsb.network.api.FSBServerInterface;
 
 import java.util.ArrayList;
 
@@ -18,7 +19,7 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     private static final int POLLING_RATE_TIME_MILLIS = 100;
 
     //position provided (FSBServer)
-    private PositionProvider positionProvider;
+    private FSBServerInterface positionProvider;
 
     //array of arms
     private final ArmInterface[] arms;
@@ -56,7 +57,7 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     }
 
     @Override
-    public void setPositionProvider(PositionProvider positionProvider) {
+    public void setPositionProvider(FSBServerInterface positionProvider) {
         this.positionProvider = positionProvider;
     }
 
