@@ -39,7 +39,7 @@ public class HalTest {
             }
         }*/
         try {
-            this.arms[4] = armFactory.provideArm(4);
+            //this.arms[4] = armFactory.provideArm(4);
             this.arms[5] = armFactory.provideArm(5);
         } catch (IOException e) {
             e.printStackTrace();
