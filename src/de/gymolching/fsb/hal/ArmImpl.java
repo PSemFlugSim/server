@@ -34,7 +34,7 @@ public class ArmImpl implements ArmInterface {
     private final static Pin COUNTER_CLEAR_PIN = MCP23017Pin.GPIO_B4;
 
     //how long the pin connected to the counter chip's clear pin should be high
-    private final static int COUNTER_CLEAR_HIGH_TIME_MILLIS = 5;
+    private final static int COUNTER_CLEAR_HIGH_TIME_MILLIS = 1000;
 
     //how long should be waited after the counter chip's clear was high
     private final static int COUNTER_CLEAR_WAIT_TIME_MILLIS = 50;
@@ -309,12 +309,13 @@ public class ArmImpl implements ArmInterface {
      * Reads the counter chip's current value
      * @return  counter chip's value
      */
-    private int readCurrentCounterValue() {
+    public int readCurrentCounterValue() {
         if (!this.counterBlocked) {
             String ins = "";
             for (int i = this.counterQ.length - 1; i >= 0; i--) {
                 ins += (this.counterQ[i].getState().isHigh()) ? "1" : "0";
             }
+            System.out.println("ins=" + ins);
             return Integer.valueOf(ins, 2);
         } else {
             return 0;

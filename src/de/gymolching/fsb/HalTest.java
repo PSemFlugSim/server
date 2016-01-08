@@ -24,6 +24,8 @@ public class HalTest {
     //array of arms
     private ArmInterface[] arms;
 
+    private int outputArmPos = -1;
+
 
     public HalTest() {
         this.armFactory = ArmFactoryImpl.getInstance(GpioFactory.getInstance());
@@ -66,6 +68,7 @@ public class HalTest {
                 System.out.println("hal [nr] speed [s]    sets motor [nr] to speed [s]");
                 System.out.println("hal [nr] pos          returns position of arm [nr]");
                 System.out.println("hal [nr] reset        resets position buffer of arm [nr]");
+                System.out.println("hal [nr] o            repeatedly outputs pos of arm [nr]");
                 System.out.println("hal help              prints this help");
                 return true;
             } else if (cmdParts.length >= 3) {
@@ -125,6 +128,25 @@ public class HalTest {
                         case "reset":
                             System.out.println("resetting arm " + armNr);
                             reset(armNr);
+                            break;
+
+                        case "o":
+                            if (cmdParts.length >= 4) {
+                                if (cmdParts[3].equalsIgnoreCase("off")) outputArmPos = -1;
+                            } else {
+                                System.out.println("outputting position for arm " + armNr);
+                                outputArmPos = armNr;
+                                new Thread(() -> {
+                                    while(outputArmPos >= 0) {
+                                        printPosition(outputArmPos);
+                                        try {
+                                            Thread.sleep(100);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }).start();
+                            }
                             break;
 
                         default:
