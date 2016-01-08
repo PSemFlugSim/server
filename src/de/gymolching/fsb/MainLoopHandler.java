@@ -55,12 +55,12 @@ public class MainLoopHandler {
 
         this.arms = new ArmInterface[ARM_AMOUNT];
 
-        for (int i = 0; i < ARM_AMOUNT; i++) {
-            try {
-                this.arms[i] = armFactory.provideArm(i);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        for (int i = 0; i < 6; i++) this.arms[i] = null;
+
+        try {
+            this.arms[5] = armFactory.provideArm(5);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         regulationInterface = new SingleThreadRegulation(arms);
