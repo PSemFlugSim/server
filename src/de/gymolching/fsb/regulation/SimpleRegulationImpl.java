@@ -5,220 +5,170 @@ import de.gymolching.fsb.api.FSBPosition;
 import de.gymolching.fsb.halApi.ArmInterface;
 import de.gymolching.fsb.network.api.FSBServerInterface;
 
-import java.util.ArrayList;
-
 /**
  * @author sschaeffner
  */
-public class SimpleRegulationImpl implements RegulationInterface, Runnable {
+public class SimpleRegulationImpl extends FSBRegulation implements Runnable, RegulationManagerInterface {
 
-    //how many steps are available to 100%
-    private static final int MAX_STEPS = 37;
+	// how many steps are available to 100%
+	public static final int MAX_STEPS = 37;
 
-    //how long to wait between each position poll
-    private static final int POLLING_RATE_TIME_MILLIS = 100;
+	// how long to wait between each position poll
+	public static final int POLLING_RATE_TIME_MILLIS = 100;
 
-    //position provided (FSBServer)
-    private FSBServerInterface positionProvider;
+	// how long this thread times out if it waits for other threads to all
+	// finish moving
+	public static final int ARM_MOVING_POLLING_RATE_TIME_MILLIS = 200;
 
-    //array of arms
-    private final ArmInterface[] arms;
+	// one thread per arm
+	private final Thread[] armThreads;
 
-    //one thread per arm
-    private final Thread[] armThreads;
+	// current goal lengths for every arm
+	private final int[] lengths;
 
-    //current goal lengths for every arm
-    private final int[] lengths;
+	// main watch thread
+	private final Thread mainWatchThread;
 
-    //whether an arm is currently moving
-    private final boolean[] armMoving;
+	public SimpleRegulationImpl(ArmInterface[] arms, FSBServerInterface positionProvider) {
+		super(arms, positionProvider);
 
-    //main watch thread
-    private final Thread mainWatchThread;
+		lengths = new int[arms.length];
 
-    public SimpleRegulationImpl(ArmInterface[] arms) {
-        this.arms = arms;
+		this.armThreads = new Thread[arms.length];
+		for (int i = 0; i < this.armThreads.length; i++) {
+			this.armThreads[i] = new Thread(new ArmThread(this, arms[i], i));
+			this.armThreads[i].start();
+		}
 
-        lengths = new int[arms.length];
+		mainWatchThread = new Thread(this);
+		mainWatchThread.start();
+	}
 
-        armMoving = new boolean[arms.length];
-        for (int i = 0; i < arms.length; i++) {
-        	armMoving[i] = true;
-        }
+	// Main watch thread
+	@Override
+	public void run() {
+		System.out.println("[MWT] all arms at starting position");
 
-        this.armThreads = new Thread[arms.length];
-        for (int i = 0; i < this.armThreads.length; i++) {
-            this.armThreads[i] = new Thread(new ArmThread(arms[i], i));
-            this.armThreads[i].start();
-        }
+		while (Launcher.isRunning()) {
+			// wait for all arms to be done moving
+			waitForArmsToBeDone();
+			System.out.println("[MWT] waiting for new position...");
 
-        mainWatchThread = new Thread(this);
-        mainWatchThread.start();
-    }
+			// get most recent position
+			FSBPosition position = this.getMostRecentPosition();
+			System.out.println("[MWT] new position: " + position.toString());
 
-    @Override
-    public void setPositionProvider(FSBServerInterface positionProvider) {
-        this.positionProvider = positionProvider;
-    }
+			// set lengths
+			this.parsePosition(position);
+			System.out.println("[MWT] parsed new position");
 
-    //Main watch thread
-    @Override
-    public void run() {
+			// Wake up all Threads
+			this.wakeArms();
+			System.out.println("DEB notified");
+		}
+	}
 
-        //wait for all arms to be done moving to starting position
-        boolean allAtStartingPosition = false;
-        while (!allAtStartingPosition) {
-            allAtStartingPosition = true;
-            for (int i = 0; i < this.armMoving.length; i++) {
-                if (this.armMoving[i]) allAtStartingPosition = false;
-            }
-            if (!allAtStartingPosition) {
-                synchronized (this.armMoving) {
-                    try {
-                        this.armMoving.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                System.out.println("[MWT] change in armMoving");
-            }
-        }
+	@Override
+	public synchronized int getArmLength(int armId) {
+		return this.lengths[armId];
+	}
 
-        System.out.println("[MWT] all arms at starting position");
+	public synchronized void setArmLength(int armId, int newLength) {
+		this.lengths[armId] = newLength;
+	}
 
-        while (Launcher.isRunning()) {
+	/**
+	 * Checks arm thread for id and returns whether that arm is moving (Thread
+	 * awake) or done moving (Thread sleeping)
+	 * 
+	 * @param arm
+	 * @return
+	 */
+	public synchronized boolean isArmMoving(int armId) {
+		// If the Thread is not waiting our arm must be moving. Simple
+		// assumption we can make here. Still: Don't try this at home kids
+		return this.armThreads[armId].getState() != Thread.State.WAITING;
+	}
 
-            System.out.println("[MWT] waiting for new position...");
+	/**
+	 * Blocking method that waits for all arms to be @ Home
+	 */
+	private void waitForArmsToBeDone() {
+		boolean allDoneMoving = false;
 
-            //get most recent position
-            FSBPosition position = null;
+		while (!allDoneMoving) {
+			// Assume all done
+			allDoneMoving = true;
 
-            try {
-                position = positionProvider.getMostRecentPositionUpdate();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+			// For every arm
+			for (int i = 0; i < this.arms.length; i++) {
+				// If one arm is still moving not all arms are done moving, duh
+				if (this.isArmMoving(i)) {
+					// Found one thats not done, reset to false
+					allDoneMoving = false;
+					break;
+				}
+			}
 
-            //exit if position is null
-            if (position == null) {
-                System.err.println("PositionProvider provided empty (null) position");
-                Launcher.exit();
-            }
+			// Arbitrary timeout to prevent resource wasting
+			try {
+				Thread.sleep(ARM_MOVING_POLLING_RATE_TIME_MILLIS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
+	/**
+	 * Wakes up all arms from Thread.State = WAITING
+	 */
+	private void wakeArms() {
+		for (int i = 0; i < this.armThreads.length; i++) {
+			if (!this.isArmMoving(i))
+				synchronized (this.armThreads[i]) {
+					this.armThreads[i].notify();
+				}
+		}
+	}
 
-            System.out.println("[MWT] new position: " + position.toString());
+	/**
+	 * Receives most recent position. Blocking
+	 * 
+	 * @return
+	 */
+	private FSBPosition getMostRecentPosition() {
+		FSBPosition position = null;
+		try {
+			position = positionProvider.getMostRecentPositionUpdate();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
-            //set lengths
-            lengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-            lengths[1] = (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-            lengths[2] = (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-            lengths[3] = (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-            lengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
-            lengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) MAX_STEPS);
+		// exit if position is null
+		if (position == null) {
+			System.err.println("PositionProvider provided empty (null) position");
+			Launcher.exit();
+		}
+		return position;
+	}
 
-            System.out.println("[MWT] received new position");
-
-            //set armMoving to true, notify ArmThreads
-            for (int i = 0; i < armMoving.length; i++) armMoving[i] = true;
-
-            synchronized (this.lengths) {
-                this.lengths.notifyAll();
-            }
-
-            System.out.println("DEB notified");
-
-            //wait for all arms to be done moving
-            boolean allDone = false;
-            while (!allDone) {
-                allDone = true;
-                for (boolean anArmMoving : this.armMoving) {
-                    if (anArmMoving) allDone = false;
-                }
-                if (!allDone) {
-                    synchronized (this.armMoving) {
-                        try {
-                            this.armMoving.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                System.out.println("[MWT] change in armMoving");
-            }
-        }
-    }
-
-    /**
-     * One thread an arm.
-     */
-    private class ArmThread implements Runnable {
-        private final ArmInterface arm;
-        private final int armId;
-
-        private ArmThread(ArmInterface arm, int armId) {
-            this.arm = arm;
-            this.armId = armId;
-        }
-
-        @Override
-        public void run() {
-            //drive to starting position
-            System.out.println("[ARM" + armId + "] moving to starting position");
-            arm.moveToStartingPosition();
-            armMoving[armId] = false;
-            System.out.println("[ARM" + armId + "] at starting position");
-
-            synchronized (armMoving) {
-                armMoving.notifyAll();
-            }
-
-            while (Launcher.isRunning()) {
-
-                synchronized (lengths) {
-                    try {
-                        lengths.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                System.out.println("[ARM" + armId + "] received new position");
-
-                if (lengths != null) {
-                    //drive to new position
-                    int currentPos = arm.getPosition();
-                    int goalPos = lengths[armId];
-                    if (currentPos > goalPos) {
-                        arm.setSpeed(100);
-                        arm.startBackward();
-                        while (currentPos > goalPos) {
-                            try {
-                                Thread.sleep(POLLING_RATE_TIME_MILLIS);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            currentPos = arm.getPosition();
-                        }
-                    } else if (currentPos < goalPos) {
-                        arm.setSpeed(100);
-                        arm.startForward();
-                        while (currentPos < goalPos) {
-                            try {
-                                Thread.sleep(POLLING_RATE_TIME_MILLIS);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            currentPos = arm.getPosition();
-                        }
-                    }
-                    arm.stop();
-                    armMoving[armId] = false;
-                    System.out.println("[ARM" + armId + "] at goal position");
-                    synchronized (armMoving) {
-                        armMoving.notifyAll();
-                    }
-                }
-            }
-        }
-    }
+	/**
+	 * Parses position and stores it into lengths[]
+	 * 
+	 * @param position
+	 */
+	private void parsePosition(FSBPosition position) {
+		this.setArmLength(0,
+				(int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+		this.setArmLength(1,
+				(int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+		this.setArmLength(2,
+				(int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+		this.setArmLength(3,
+				(int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+		this.setArmLength(4,
+				(int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+		this.setArmLength(5,
+				(int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) MAX_STEPS));
+	}
 }

@@ -6,7 +6,7 @@ import de.gymolching.fsb.halApi.ArmFactory;
 import de.gymolching.fsb.halApi.ArmInterface;
 import de.gymolching.fsb.network.api.FSBServerInterface;
 import de.gymolching.fsb.network.implementation.FSBServer;
-import de.gymolching.fsb.regulation.RegulationInterface;
+import de.gymolching.fsb.regulation.FSBRegulation;
 import de.gymolching.fsb.regulation.SingleThreadRegulation;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class MainLoopHandler {
 	private FSBServerInterface server;
 
 	// regulation
-	private RegulationInterface regulationInterface;
+	private FSBRegulation regulationInterface;
 
 	// hal arm factory
 	private ArmFactory armFactory;
@@ -62,14 +62,7 @@ public class MainLoopHandler {
 			}
 		}
 
-		regulationInterface = new SingleThreadRegulation(arms);
-	}
-
-	/**
-	 * Starts the main loop.
-	 */
-	public void mainLoop() {
-		regulationInterface.setPositionProvider(server);
+		regulationInterface = new SingleThreadRegulation(arms, server);
 	}
 
 	/**

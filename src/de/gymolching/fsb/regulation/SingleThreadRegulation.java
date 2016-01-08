@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 /**
  * @author sschaeffner
  */
-public class SingleThreadRegulation implements RegulationInterface {
+public class SingleThreadRegulation extends FSBRegulation {
 
 	// amount of arms available
 	private final int ARM_AMOUNT = 6;
@@ -22,17 +22,12 @@ public class SingleThreadRegulation implements RegulationInterface {
 	// Logging
 	private static final Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-	// PositionProvider instance
-	private FSBServerInterface positionProvider;
-
-	// all 6 arms
-	private final ArmInterface[] arms;
-
 	// main thread instance
 	private Thread mainThread;
 
-	public SingleThreadRegulation(ArmInterface[] arms) {
-		this.arms = arms;
+	public SingleThreadRegulation(ArmInterface[] arms, FSBServerInterface positionProvider) {
+		super(arms, positionProvider);
+
 		setupMainThread();
 	}
 
@@ -174,10 +169,5 @@ public class SingleThreadRegulation implements RegulationInterface {
 			}
 		}
 		return true;
-	}
-
-	@Override
-	public void setPositionProvider(FSBServerInterface positionProvider) {
-		this.positionProvider = positionProvider;
 	}
 }
