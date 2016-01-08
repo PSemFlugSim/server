@@ -16,7 +16,7 @@ public class ArmImpl implements ArmInterface {
 
     //max position of motor
     //amount of steps from 0% to 100%
-    private final static int MAX_ABS_POSITION = 37;
+    private final static int MAX_ABS_POSITION = 75;
 
     //max pwm value (=100%) for pwm chip
     private final static int PWM_MAX_VALUE = 24999;
@@ -40,7 +40,7 @@ public class ArmImpl implements ArmInterface {
     private final static int COUNTER_CLEAR_WAIT_TIME_MILLIS = 50;
 
     //how much time should by between every poll while driving to starting position
-    private final static int STARTING_POSITION_POLLING_TIME_MILLIS = 1000;
+    private final static int STARTING_POSITION_POLLING_TIME_MILLIS = 500;
 
     //pwm output pin connected to the h-driver's enable pin
     private final GpioPinPwmOutput hDriverEnPwmOutputPin;
@@ -263,7 +263,7 @@ public class ArmImpl implements ArmInterface {
         System.out.println("moving to starting position...");
         //save speed
         int latestSpeedS = this.lastSpeed;
-        setSpeed(50);
+        setSpeed(30);
         startBackward();
 
         resetPositionBuffer();

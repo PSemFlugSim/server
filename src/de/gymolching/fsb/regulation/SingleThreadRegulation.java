@@ -1,5 +1,6 @@
 package de.gymolching.fsb.regulation;
 
+import com.sun.tools.javac.util.List;
 import de.gymolching.fsb.Launcher;
 import de.gymolching.fsb.api.FSBPosition;
 import de.gymolching.fsb.halApi.ArmInterface;
@@ -15,8 +16,8 @@ public class SingleThreadRegulation implements RegulationInterface {
     //amount of arms available
     private final int ARM_AMOUNT = 6;
 
-    //amount of steps from 0% to 100%
-    private final int MAX_STEPS = 37;
+    //maximum speed in percent
+    private final int MAX_SPEED = 50;
 
     //Logging
     private static final Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -63,21 +64,21 @@ public class SingleThreadRegulation implements RegulationInterface {
                         //put position into easily accessible array
                         int[] armLengths = new int[ARM_AMOUNT];
 
-                        armLengths[0] = (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) arms[0].getMaxPosition());
-                        armLengths[1] = (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) arms[1].getMaxPosition());
-                        armLengths[2] = (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) arms[2].getMaxPosition());
-                        armLengths[3] = (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) arms[3].getMaxPosition());
-                        armLengths[4] = (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) arms[4].getMaxPosition());
-                        armLengths[5] = (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) arms[5].getMaxPosition());
+                        armLengths[0] = (arms[0] == null) ? 0 : (int) Math.round(((double) position.getLength1() / (double) FSBPosition.MAX) * (double) arms[0].getMaxPosition());
+                        armLengths[1] = (arms[1] == null) ? 0 : (int) Math.round(((double) position.getLength2() / (double) FSBPosition.MAX) * (double) arms[1].getMaxPosition());
+                        armLengths[2] = (arms[2] == null) ? 0 : (int) Math.round(((double) position.getLength3() / (double) FSBPosition.MAX) * (double) arms[2].getMaxPosition());
+                        armLengths[3] = (arms[3] == null) ? 0 : (int) Math.round(((double) position.getLength4() / (double) FSBPosition.MAX) * (double) arms[3].getMaxPosition());
+                        armLengths[4] = (arms[4] == null) ? 0 : (int) Math.round(((double) position.getLength5() / (double) FSBPosition.MAX) * (double) arms[4].getMaxPosition());
+                        armLengths[5] = (arms[5] == null) ? 0 : (int) Math.round(((double) position.getLength6() / (double) FSBPosition.MAX) * (double) arms[5].getMaxPosition());
 
                         //calculate arm position diffs and then their speeds
                         int[] armPositionDiffs = new int[ARM_AMOUNT];
-                        armPositionDiffs[0] = Math.abs(arms[0].getPosition() - armLengths[0]);
-                        armPositionDiffs[1] = Math.abs(arms[1].getPosition() - armLengths[1]);
-                        armPositionDiffs[2] = Math.abs(arms[2].getPosition() - armLengths[2]);
-                        armPositionDiffs[3] = Math.abs(arms[3].getPosition() - armLengths[3]);
-                        armPositionDiffs[4] = Math.abs(arms[4].getPosition() - armLengths[4]);
-                        armPositionDiffs[5] = Math.abs(arms[5].getPosition() - armLengths[5]);
+                        armPositionDiffs[0] = (arms[0] == null) ? 1 : Math.abs(arms[0].getPosition() - armLengths[0]);
+                        armPositionDiffs[1] = (arms[1] == null) ? 1 : Math.abs(arms[1].getPosition() - armLengths[1]);
+                        armPositionDiffs[2] = (arms[2] == null) ? 1 : Math.abs(arms[2].getPosition() - armLengths[2]);
+                        armPositionDiffs[3] = (arms[3] == null) ? 1 : Math.abs(arms[3].getPosition() - armLengths[3]);
+                        armPositionDiffs[4] = (arms[4] == null) ? 1 : Math.abs(arms[4].getPosition() - armLengths[4]);
+                        armPositionDiffs[5] = (arms[5] == null) ? 1 : Math.abs(arms[5].getPosition() - armLengths[5]);
                         for (int i = 0; i < armPositionDiffs.length; i++) {
                             log.fine("POS DIFF " + i + ": " + armPositionDiffs[i]);
                         }
@@ -87,12 +88,17 @@ public class SingleThreadRegulation implements RegulationInterface {
                         log.fine("longestDiff=" + longestDiff);
 
                         int[] armSpeeds = new int[ARM_AMOUNT];
-                        armSpeeds[0] = (int)Math.round(((double)armPositionDiffs[0] / (double)longestDiff) * 100);
-                        armSpeeds[1] = (int)Math.round(((double)armPositionDiffs[1] / (double)longestDiff) * 100);
-                        armSpeeds[2] = (int)Math.round(((double)armPositionDiffs[2] / (double)longestDiff) * 100);
-                        armSpeeds[3] = (int)Math.round(((double)armPositionDiffs[3] / (double)longestDiff) * 100);
-                        armSpeeds[4] = (int)Math.round(((double)armPositionDiffs[4] / (double)longestDiff) * 100);
-                        armSpeeds[5] = (int)Math.round(((double)armPositionDiffs[5] / (double)longestDiff) * 100);
+                        armSpeeds[0] = (arms[0] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[0] / (double)longestDiff) * MAX_SPEED);
+                        armSpeeds[1] = (arms[1] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[1] / (double)longestDiff) * MAX_SPEED);
+                        armSpeeds[2] = (arms[2] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[2] / (double)longestDiff) * MAX_SPEED);
+                        armSpeeds[3] = (arms[3] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[3] / (double)longestDiff) * MAX_SPEED);
+                        armSpeeds[4] = (arms[4] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[4] / (double)longestDiff) * MAX_SPEED);
+                        armSpeeds[5] = (arms[5] == null) ? 0 : (int)Math.round(((double)armPositionDiffs[5] / (double)longestDiff) * MAX_SPEED);
+
+                        System.out.print("arm speeds: ");
+                        for (int i = 0; i < armSpeeds.length; i++) {
+                            System.out.print(armSpeeds[i] + " ");
+                        }
 
                         for (int i = 0; i < armSpeeds.length; i++) {
                             log.fine("ARM SPEED " + i + ": " + armSpeeds[i]);
@@ -119,15 +125,21 @@ public class SingleThreadRegulation implements RegulationInterface {
                             for (int i = 0; i < ARM_AMOUNT; i++) {
                                 if (arms[i] == null) continue;
                                 if (arms[i].getDirection() == 1) {
+                                    int currentPosition = arms[i].getPosition();
+                                    System.out.println("#" + i + " pos=" + currentPosition);
+
                                     //if currently moving forward, check if position is greater/equal than desired position
-                                    if (arms[i].getPosition() >= armLengths[i]) {
+                                    if (currentPosition >= armLengths[i]) {
                                         //then stop
                                         arms[i].stop();
                                         arrived[i] = true;
                                     }//else do nothing (go on moving)
                                 } else if (arms[i].getDirection() == -1) {
+                                    int currentPosition = arms[i].getPosition();
+                                    System.out.println("#" + i + " pos=" + currentPosition);
+
                                     //if currently moving backward, check if position is smaller/equal than desired position
-                                    if (arms[i].getPosition() <= armLengths[i]) {
+                                    if (currentPosition <= armLengths[i]) {
                                         //then stop
                                         arms[i].stop();
                                         arrived[i] = true;
