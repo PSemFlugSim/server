@@ -261,12 +261,15 @@ public class ArmImpl implements ArmInterface {
     @Override
     public void moveToStartingPosition() {
         System.out.println("moving to starting position...");
+        
+        // Reset position buffer
+        resetPositionBuffer();
+
         //save speed
         int latestSpeedS = this.lastSpeed;
         setSpeed(50);
         startBackward();
 
-        resetPositionBuffer();
         int lastPos;
         int newPos = -1;
 
