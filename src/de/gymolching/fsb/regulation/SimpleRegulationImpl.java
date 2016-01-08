@@ -39,11 +39,11 @@ public class SimpleRegulationImpl implements RegulationInterface, Runnable {
     public SimpleRegulationImpl(ArmInterface[] arms) {
         this.arms = arms;
 
-        lengths = new int[6];
+        lengths = new int[arms.length];
 
         armMoving = new boolean[arms.length];
         for (int i = 0; i < arms.length; i++) {
-            armMoving[i] = true;
+        	armMoving[i] = true;
         }
 
         this.armThreads = new Thread[arms.length];
